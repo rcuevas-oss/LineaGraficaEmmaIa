@@ -633,7 +633,13 @@ export function SocialB2B() {
                 fontWeight: tab === t.id ? 600 : 400,
                 color: tab === t.id ? T.blue : T.slate,
                 background: tab === t.id ? T.blueTint : "transparent",
-                border: tab === t.id
+                borderTop: tab === t.id
+                  ? `1px solid rgba(26,68,255,0.2)`
+                  : "1px solid transparent",
+                borderLeft: tab === t.id
+                  ? `1px solid rgba(26,68,255,0.2)`
+                  : "1px solid transparent",
+                borderRight: tab === t.id
                   ? `1px solid rgba(26,68,255,0.2)`
                   : "1px solid transparent",
                 borderBottom: "none",

@@ -1,7 +1,165 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { SectionLabel } from "./ColorSystem";
 import { LogoMark } from "./BrandHero";
 import { FlowPattern, CircuitPattern } from "./GraphicElements";
+import html2canvas from "html2canvas";
+import { Download } from "lucide-react";
+
+// ─── Export Utility ──────────────────────────────────────────────────────────
+async function exportAsImage(
+  elementRef: HTMLElement,
+  fileName: string,
+  width: number,
+  height: number
+) {
+  try {
+    // Create a temporary container with exact dimensions
+    const tempContainer = document.createElement("div");
+    tempContainer.style.position = "fixed";
+    tempContainer.style.left = "-9999px";
+    tempContainer.style.top = "0";
+    tempContainer.style.width = `${width}px`;
+    tempContainer.style.height = `${height}px`;
+    document.body.appendChild(tempContainer);
+
+    // Clone the element
+    const clone = elementRef.cloneNode(true) as HTMLElement;
+    clone.style.width = `${width}px`;
+    clone.style.height = `${height}px`;
+    clone.style.maxWidth = "none";
+    clone.style.margin = "0";
+    
+    // Convert oklch colors to rgb before appending
+    convertOklchToRgb(clone);
+    
+    tempContainer.appendChild(clone);
+
+    // Wait for fonts and styles to load
+    await document.fonts.ready;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Capture with high quality settings
+    const canvas = await html2canvas(clone, {
+      width: width,
+      height: height,
+      scale: 2, // 2x resolution for high quality
+      backgroundColor: null,
+      logging: false,
+      useCORS: true,
+      allowTaint: true,
+    });
+
+    // Clean up
+    document.body.removeChild(tempContainer);
+
+    // Download
+    const link = document.createElement("a");
+    link.download = fileName;
+    link.href = canvas.toDataURL("image/png", 1.0);
+    link.click();
+  } catch (error) {
+    console.error("Error exporting image:", error);
+    alert("Error al exportar la imagen. Por favor, intenta nuevamente.");
+  }
+}
+
+// Convert oklch colors to rgb for html2canvas compatibility
+function convertOklchToRgb(element: HTMLElement) {
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_ELEMENT,
+    null
+  );
+  
+  const elements: HTMLElement[] = [element];
+  let currentNode = walker.nextNode();
+  while (currentNode) {
+    elements.push(currentNode as HTMLElement);
+    currentNode = walker.nextNode();
+  }
+  
+  elements.forEach((el) => {
+    const style = window.getComputedStyle(el);
+    const props = [
+      'color', 'backgroundColor', 'borderColor', 
+      'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+      'outlineColor', 'fill', 'stroke'
+    ];
+    
+    props.forEach((prop) => {
+      const value = style.getPropertyValue(prop);
+      if (value && value.includes('oklch')) {
+        // Get computed RGB value
+        const computed = style.getPropertyValue(prop);
+        // Set as inline style to override
+        (el as HTMLElement).style.setProperty(prop, computed, 'important');
+      }
+    });
+  });
+}
+
+// ─── EMMA IA Logo Component ──────────────────────────────────────────────────
+function EmmaIALogo({ 
+  size = "md", 
+  dark = false,
+  showTagline = true 
+}: { 
+  size?: "sm" | "md" | "lg";
+  dark?: boolean;
+  showTagline?: boolean;
+}) {
+  const sizes = {
+    sm: { emma: "14px", ia: "10px", tagline: "5px", gap: "4px" },
+    md: { emma: "22px", ia: "13px", tagline: "7px", gap: "6px" },
+    lg: { emma: "32px", ia: "18px", tagline: "9px", gap: "8px" },
+  };
+  
+  const s = sizes[size];
+  const textColor = dark ? "#06060A" : "#F4F3FF";
+  const lime = dark ? "#06060A" : "#AAFF00";
+  const taglineColor = dark ? "rgba(6,6,10,0.4)" : "#6B6A85";
+
+  return (
+    <div className="flex flex-col" style={{ gap: s.gap }}>
+      <div className="flex items-baseline gap-2">
+        <span
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: s.emma,
+            fontWeight: 700,
+            color: textColor,
+            letterSpacing: "0.05em",
+          }}
+        >
+          EMMA
+        </span>
+        <span
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: s.ia,
+            fontWeight: 700,
+            color: lime,
+            letterSpacing: "0.15em",
+          }}
+        >
+          IA
+        </span>
+      </div>
+      {showTagline && (
+        <div
+          style={{
+            fontFamily: "'Space Mono', monospace",
+            fontSize: s.tagline,
+            letterSpacing: "0.25em",
+            color: taglineColor,
+          }}
+        >
+          SOFTWARE & AUTOMATION
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Instagram Square Post ──────────────────────────────────────────────────
 function InstagramPost({ variant = 1 }: { variant?: number }) {
@@ -102,29 +260,7 @@ function InstagramPost({ variant = 1 }: { variant?: number }) {
 
           {/* Bottom: footer */}
           <div className="flex justify-between items-end">
-            <div>
-              <div
-                style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: "clamp(18px, 4vw, 28px)",
-                  fontWeight: 700,
-                  color: "#AAFF00",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                FLUX
-              </div>
-              <div
-                style={{
-                  fontFamily: "'Space Mono', monospace",
-                  fontSize: "7px",
-                  color: "#6B6A85",
-                  letterSpacing: "0.15em",
-                }}
-              >
-                SOFTWARE & AUTOMATION
-              </div>
-            </div>
+            <EmmaIALogo size="sm" />
             <div
               style={{
                 fontFamily: "'Space Mono', monospace",
@@ -132,7 +268,7 @@ function InstagramPost({ variant = 1 }: { variant?: number }) {
                 color: "#6B6A85",
               }}
             >
-              @flux.studio
+              @emma.ia
             </div>
           </div>
         </div>
@@ -205,17 +341,7 @@ function InstagramPost({ variant = 1 }: { variant?: number }) {
 
         {/* Bottom */}
         <div className="flex justify-between items-center">
-          <div
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: "clamp(16px, 4vw, 24px)",
-              fontWeight: 700,
-              color: "#06060A",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            FLUX
-          </div>
+          <EmmaIALogo size="sm" dark showTagline={false} />
           <div
             style={{
               fontFamily: "'Space Mono', monospace",
@@ -223,7 +349,7 @@ function InstagramPost({ variant = 1 }: { variant?: number }) {
               color: "rgba(6,6,10,0.5)",
             }}
           >
-            @flux.studio
+            @emma.ia
           </div>
         </div>
       </div>
@@ -294,7 +420,7 @@ function InstagramStory() {
               letterSpacing: "0.12em",
             }}
           >
-            flux.studio
+            emma.ia
           </div>
         </div>
 
@@ -382,7 +508,7 @@ function InstagramStory() {
               letterSpacing: "0.1em",
             }}
           >
-            flux.studio · software & automation
+            emma.ia · software & automation
           </div>
         </div>
       </div>
@@ -454,31 +580,7 @@ function LinkedInBanner() {
           className="h-10 w-px"
           style={{ background: "rgba(255,255,255,0.1)" }}
         />
-        <div>
-          <div
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: "clamp(16px, 3vw, 26px)",
-              fontWeight: 700,
-              color: "#F4F3FF",
-              letterSpacing: "-0.03em",
-              lineHeight: 1.1,
-            }}
-          >
-            FLUX Studio
-          </div>
-          <div
-            style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: "clamp(8px, 1.5vw, 11px)",
-              color: "#AAFF00",
-              letterSpacing: "0.1em",
-              marginTop: "2px",
-            }}
-          >
-            SOFTWARE & AUTOMATION
-          </div>
-        </div>
+        <EmmaIALogo size="md" />
         <div className="flex-1 hidden sm:block" />
         <div className="hidden sm:flex gap-8">
           {["Flujos RPA", "Integraciones API", "IA a medida"].map((s) => (
@@ -544,31 +646,7 @@ function TwitterHeader() {
 
       {/* Content */}
       <div className="absolute inset-0 flex items-center justify-between px-8">
-        <div>
-          <div
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: "clamp(24px, 5vw, 44px)",
-              fontWeight: 700,
-              color: "#F4F3FF",
-              letterSpacing: "-0.04em",
-              lineHeight: 1,
-            }}
-          >
-            FLUX
-          </div>
-          <div
-            style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: "clamp(7px, 1.5vw, 11px)",
-              color: "#AAFF00",
-              letterSpacing: "0.2em",
-              marginTop: "4px",
-            }}
-          >
-            AUTOMATIZA · ESCALA · CRECE
-          </div>
-        </div>
+        <EmmaIALogo size="lg" showTagline={false} />
         <div className="flex flex-col items-end gap-2">
           <LogoMark size="md" />
           <div
@@ -579,7 +657,7 @@ function TwitterHeader() {
               letterSpacing: "0.1em",
             }}
           >
-            @flux_studio
+            @emma.ia
           </div>
         </div>
       </div>
@@ -674,6 +752,74 @@ const TABS: { id: TabId; label: string }[] = [
 export function SocialTemplates() {
   const [activeTab, setActiveTab] = useState<TabId>("post");
   const [postVariant, setPostVariant] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const postRef = useRef<HTMLDivElement>(null);
+  const storyRef = useRef<HTMLDivElement>(null);
+  const linkedinRef = useRef<HTMLDivElement>(null);
+  const twitterRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    
+    try {
+      switch (activeTab) {
+        case "post":
+          if (postRef.current) {
+            await exportAsImage(
+              postRef.current,
+              `EMMA-IA-Instagram-Post-V${postVariant}.png`,
+              1080,
+              1080
+            );
+          }
+          break;
+        case "story":
+          if (storyRef.current) {
+            await exportAsImage(
+              storyRef.current,
+              "EMMA-IA-Instagram-Story.png",
+              1080,
+              1920
+            );
+          }
+          break;
+        case "linkedin":
+          if (linkedinRef.current) {
+            await exportAsImage(
+              linkedinRef.current,
+              "EMMA-IA-LinkedIn-Banner.png",
+              1584,
+              396
+            );
+          }
+          break;
+        case "twitter":
+          if (twitterRef.current) {
+            await exportAsImage(
+              twitterRef.current,
+              "EMMA-IA-Twitter-Header.png",
+              1500,
+              500
+            );
+          }
+          break;
+        case "profile":
+          if (profileRef.current) {
+            await exportAsImage(
+              profileRef.current,
+              "EMMA-IA-Profile-Icon.png",
+              400,
+              400
+            );
+          }
+          break;
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <section
@@ -702,7 +848,9 @@ export function SocialTemplates() {
                 letterSpacing: "0.1em",
                 color: activeTab === tab.id ? "#AAFF00" : "#6B6A85",
                 background: activeTab === tab.id ? "rgba(170,255,0,0.08)" : "transparent",
-                border: activeTab === tab.id ? "1px solid rgba(170,255,0,0.25)" : "1px solid transparent",
+                borderTop: activeTab === tab.id ? "1px solid rgba(170,255,0,0.25)" : "1px solid transparent",
+                borderLeft: activeTab === tab.id ? "1px solid rgba(170,255,0,0.25)" : "1px solid transparent",
+                borderRight: activeTab === tab.id ? "1px solid rgba(170,255,0,0.25)" : "1px solid transparent",
                 borderBottom: "none",
                 cursor: "pointer",
                 marginBottom: "-1px",
@@ -735,7 +883,10 @@ export function SocialTemplates() {
                       letterSpacing: "0.1em",
                       color: postVariant === v ? "#06060A" : "#AAFF00",
                       background: postVariant === v ? "#AAFF00" : "transparent",
-                      border: "1px solid rgba(170,255,0,0.4)",
+                      borderTop: "1px solid rgba(170,255,0,0.4)",
+                      borderRight: "1px solid rgba(170,255,0,0.4)",
+                      borderBottom: "1px solid rgba(170,255,0,0.4)",
+                      borderLeft: "1px solid rgba(170,255,0,0.4)",
                       padding: "4px 10px",
                       cursor: "pointer",
                     }}
@@ -744,7 +895,7 @@ export function SocialTemplates() {
                   </button>
                 ))}
               </div>
-              <div className="max-w-sm mx-auto">
+              <div className="max-w-sm mx-auto" ref={postRef}>
                 <InstagramPost variant={postVariant} />
               </div>
               <TemplateInfo
@@ -757,7 +908,9 @@ export function SocialTemplates() {
 
           {activeTab === "story" && (
             <div>
-              <InstagramStory />
+              <div className="max-w-sm mx-auto" ref={storyRef}>
+                <InstagramStory />
+              </div>
               <TemplateInfo
                 title="Instagram Story"
                 specs={["1080 × 1920 px", "Relación 9:16", "Safe zone: 250px top/bottom"]}
@@ -768,7 +921,9 @@ export function SocialTemplates() {
 
           {activeTab === "linkedin" && (
             <div>
-              <LinkedInBanner />
+              <div className="max-w-sm mx-auto" ref={linkedinRef}>
+                <LinkedInBanner />
+              </div>
               <TemplateInfo
                 title="LinkedIn Banner"
                 specs={["1584 × 396 px", "Relación 4:1", "Sin elementos en zona inferior izquierda (avatar superpone)"]}
@@ -779,7 +934,9 @@ export function SocialTemplates() {
 
           {activeTab === "twitter" && (
             <div>
-              <TwitterHeader />
+              <div className="max-w-sm mx-auto" ref={twitterRef}>
+                <TwitterHeader />
+              </div>
               <TemplateInfo
                 title="Twitter / X Header"
                 specs={["1500 × 500 px", "Relación 3:1", "Safe zone: 60px todos los lados"]}
@@ -790,7 +947,7 @@ export function SocialTemplates() {
 
           {activeTab === "profile" && (
             <div>
-              <div className="flex flex-col items-center gap-8 py-4">
+              <div className="flex flex-col items-center gap-8 py-4" ref={profileRef}>
                 <ProfileIcon />
                 <div className="text-center">
                   <p
@@ -808,6 +965,29 @@ export function SocialTemplates() {
               />
             </div>
           )}
+        </div>
+
+        {/* Export button */}
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-3 px-6 py-3 transition-all"
+            style={{
+              background: isExporting ? "rgba(170,255,0,0.3)" : "#AAFF00",
+              color: "#06060A",
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: "14px",
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              border: "none",
+              cursor: isExporting ? "not-allowed" : "pointer",
+              opacity: isExporting ? 0.6 : 1,
+            }}
+          >
+            <Download size={18} />
+            {isExporting ? "Exportando..." : "Descargar imagen para Instagram"}
+          </button>
         </div>
       </div>
     </section>
