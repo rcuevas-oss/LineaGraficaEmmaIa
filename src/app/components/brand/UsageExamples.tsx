@@ -3,6 +3,52 @@ import { SectionLabel } from "./ColorSystem";
 import { LogoMark } from "./BrandHero";
 import { FlowPattern } from "./GraphicElements";
 
+// ─── EMMA IA Logo Component ──────────────────────────────────────────────────
+function EmmaIALogo({ 
+  size = "md", 
+  dark = false,
+}: { 
+  size?: "sm" | "md" | "lg";
+  dark?: boolean;
+}) {
+  const sizes = {
+    sm: { emma: "14px", ia: "10px", gap: "4px" },
+    md: { emma: "18px", ia: "11px", gap: "6px" },
+    lg: { emma: "32px", ia: "18px", gap: "8px" },
+  };
+  
+  const s = sizes[size];
+  const textColor = dark ? "#06060A" : "#F4F3FF";
+  const lime = dark ? "#06060A" : "#AAFF00";
+
+  return (
+    <div className="flex items-baseline" style={{ gap: s.gap }}>
+      <span
+        style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: s.emma,
+          fontWeight: 700,
+          color: textColor,
+          letterSpacing: "0.05em",
+        }}
+      >
+        EMMA
+      </span>
+      <span
+        style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: s.ia,
+          fontWeight: 700,
+          color: lime,
+          letterSpacing: "0.15em",
+        }}
+      >
+        IA
+      </span>
+    </div>
+  );
+}
+
 // ─── Mock Card Post ──────────────────────────────────────────────────────────
 function MockPostCard({ title, tag, stat }: { title: string; tag: string; stat?: string }) {
   return (
@@ -236,17 +282,7 @@ function MockEmailHeader() {
         <div className="flex items-center gap-3">
           <LogoMark size="sm" />
           <div>
-            <div
-              style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: "18px",
-                fontWeight: 700,
-                color: "#F4F3FF",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              FLUX
-            </div>
+            <EmmaIALogo size="md" />
             <div
               style={{
                 fontFamily: "'Space Mono', monospace",
